@@ -6,9 +6,20 @@ import urllib2
 from bs4 import BeautifulSoup
 import pandas as pd
 from textblob import TextBlob
+from nltk.corpus import stopwords
+stopword = stopwords.words('english')
 
-def sentiment(headline):
-    return TextBlob(headline).sentiment.polarity
+def sentiment(text):
+    '''
+    Retruns sentiment of the text in the range -1 to 1
+    text(string): Find sentiment of text
+
+    returns: fraction (sentiment) in range -1 to 1
+    '''
+    #remove stopwords
+    text = [t for t in text.split(" ") if t not in stopword]
+    text = " ".join(w for w in text)
+    return TextBlob(text).sentiment.polarity
 
 def getHinduArticleText(url):
     '''
