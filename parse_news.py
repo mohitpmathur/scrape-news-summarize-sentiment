@@ -1,4 +1,4 @@
-# Parse leading indian newsDict sites, and check sentiment
+# Parse leading indian news sites, and check sentiment
 
 import os
 import re
@@ -23,25 +23,6 @@ def sentiment(text):
     text = " ".join(w for w in text)
     return TextBlob(text).sentiment.polarity
 
-
-def readWordFiles(positiveFile, negativeFile):
-    positiveWords = []
-    negativeWords = []
-    pos = open(positiveFile, "r")
-    for line in pos:
-        if line.startswith(";") or line.strip() == "":
-            continue
-        positiveWords.append(line.strip())
-    pos.close()
-    negfhd = open(negativeFile, "r")
-    for line in negfhd:
-        if line.startswith(";") or line.strip() == "":
-            continue
-        negativeWords.append(line.strip())
-    negfhd.close()
-    return positiveWords, negativeWords
-
-
 def removePunctuation(text):
     """Removes punctuation, changes to lower case, and strips leading
     and trailing spaces.
@@ -63,19 +44,43 @@ def removePunctuation(text):
     text = text.strip()
     return text
 
+def readWordFiles(positiveFile, negativeFile):
+    positiveWords = []
+    negativeWords = []
+    pos = open(positiveFile, "r")
+    for line in pos:
+        if line.startswith(";") or line.strip() == "":
+            continue
+        positiveWords.append(line.strip())
+    pos.close()
+    negfhd = open(negativeFile, "r")
+    for line in negfhd:
+        if line.startswith(";") or line.strip() == "":
+            continue
+        negativeWords.append(line.strip())
+    negfhd.close()
+    return positiveWords, negativeWords
 
-def get_sentiment(text, pos, neg):
+def get_sentiment(text):
+    # Remove Punctuation
+    #text = removePunctuation(text)
     posCount = 0
     negCount = 0
     text = [t for t in removePunctuation(text).split(" ") if t not in stopword]
     for w in text:
-        if w in pos:
-            print "Positive: ", w
+        if w in positiveWords:
+            #print "Positive: ", w
             posCount += 1
-        if w in neg:
-            print "Negative: ", w
+        if w in negativeWords:
+            #print "Negative: ", w
             negCount += 1
-    return text, posCount, negCount
+    sentiment = 0
+    eps = 0.0001
+    if posCount > negCount:
+        sentiment = posCount / (posCount + negCount + eps)
+    else:
+        sentiment = -1 * negCount / (posCount + negCount + eps)
+    return sentiment
 
 
 def getHinduArticleText(url):
@@ -100,7 +105,6 @@ def getHinduArticleText(url):
             # print para.get_text().strip()
             content += para.get_text().strip()
     return content
-
 
 def parse_hindu(newsKeys=[]):
     site = urllib2.urlopen("http://www.thehindu.com/").read()
@@ -142,8 +146,10 @@ def parse_hindu(newsKeys=[]):
 
 POSITIVE_FILE = "data\\positive-words.txt"
 NEGATIVE_FILE = "data\\negative-words.txt"
+positiveWords = []  # List of all positive words
+negativeWords = []  # List of all negative words
+positiveWords, negativeWords = readWordFiles(POSITIVE_FILE, NEGATIVE_FILE)
 
-'''
 newsDict = {}
 newsKeys = []
 newsDataFile = 'news_parser.pkl'
@@ -161,6 +167,6 @@ if len(newsDict) > 0:
     temp_df.columns = ['Headline','All', 'Date_Time','Source','URL']
     temp_df.drop('All', axis=1, inplace=True)
     temp_df['URL_Content'] = temp_df['URL'].map(getHinduArticleText)
+    temp_df['sentiment'] = temp_df['URL_Content'].map(get_sentiment)
     df = pd.concat([df,temp_df], ignore_index=True)
     df.to_pickle(newsDataFile)
-'''
